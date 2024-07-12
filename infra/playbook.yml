@@ -1,0 +1,15 @@
+---
+- name: Example playbook
+  hosts: all
+
+  tasks:
+  - name: Add the user 'boccard'
+    ansible.builtin.user:
+      name: boccard
+    become: yes
+    become_method: sudo
+  - name: Upgrade all apt packages
+    apt:
+      force_apt_get: yes
+      upgrade: dist
+    become: yes
