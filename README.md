@@ -1,7 +1,17 @@
-# strategie-devops
+# vagrant-ansible-exemple
 
 ## Description
-Regroupe les POC dédiés à l'élaboration de la stratégie DevOps pour Boccard.
+Contient un exemple de montage de VM avec Vagrant et Ansible pour le provisioning.
+
+## Usage
+
+```
+export CLIENT=clientB
+vagrant up
+vagrant ssh leader
+vagrant package leader
+tar xvf package.box
+```
 
 ## Roadmap
 

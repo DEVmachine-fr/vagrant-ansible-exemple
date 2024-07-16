@@ -1,0 +1,11 @@
+leader:
+  ip: "192.168.10.40"
+  user: clientA_leader
+  vm:
+    ram: 1536
+worker:
+  ip: "192.168.10.41"
+  user: clientA_worker
+  vm:
+    ram: 1536
+  ta_version: 2.19

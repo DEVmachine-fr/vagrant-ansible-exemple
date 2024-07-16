@@ -1,15 +1,43 @@
 ---
 - name: Example playbook
+  become: yes
   hosts: all
+  roles:
+    - geerlingguy.docker
+  vars:
+    pip_install_packages:
+      - name: docker
 
   tasks:
-  - name: Add the user 'boccard'
+
+  - name: Add a dedicated user
     ansible.builtin.user:
-      name: boccard
+      name: "{{ user }}"
     become: yes
     become_method: sudo
+
   - name: Upgrade all apt packages
     apt:
       force_apt_get: yes
       upgrade: dist
     become: yes
+
+  - name: Install python docker
+    apt: name=python3-docker state=latest
+
+  - name: Init a new swarm with default parameters
+    community.docker.docker_swarm:
+      state: present
+      advertise_addr: 192.168.99.100
+    register: docker_swarm_init_response
+
+  - name: Just checking the exit code - Python dict way
+    ansible.builtin.debug:
+      msg: "{{ docker_swarm_init_response }}"
+
+  # - name: Add nodes
+  #   community.docker.docker_swarm:
+  #     state: join
+  #     join_token: "{{ docker_swarm_init_response.swarm_facts.JoinTokens.Worker }}"
+  #     remote_addrs: [ '192.168.99.100:2377' ]
+  #     advertise_addr: 192.168.99.200
