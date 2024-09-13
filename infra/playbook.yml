@@ -1,5 +1,5 @@
 ---
-- name: Example playbook
+- name: Setup the node
   become: yes
   hosts: all
   roles:
@@ -7,37 +7,41 @@
   vars:
     pip_install_packages:
       - name: docker
-
   tasks:
-
   - name: Add a dedicated user
     ansible.builtin.user:
       name: "{{ user }}"
-    become: yes
     become_method: sudo
-
   - name: Upgrade all apt packages
     apt:
       force_apt_get: yes
       upgrade: dist
-    become: yes
-
   - name: Install python docker
     apt: name=python3-docker state=latest
 
-  - name: Init a new swarm with default parameters
+- name: Init a new swarm cluster with default parameters
+  become: yes
+  hosts: leader
+  tasks:
+  - name: Just checking the host
+    ansible.builtin.debug:
+      msg: "{{ ansible_host }}"
+  - name: Start the leader
     community.docker.docker_swarm:
       state: present
-      advertise_addr: 192.168.99.100
+      advertise_addr: "{{ ansible_host }}"
     register: docker_swarm_init_response
-
-  - name: Just checking the exit code - Python dict way
+  - name: Check output
     ansible.builtin.debug:
       msg: "{{ docker_swarm_init_response }}"
 
-  # - name: Add nodes
-  #   community.docker.docker_swarm:
-  #     state: join
-  #     join_token: "{{ docker_swarm_init_response.swarm_facts.JoinTokens.Worker }}"
-  #     remote_addrs: [ '192.168.99.100:2377' ]
-  #     advertise_addr: 192.168.99.200
+- name: Add a worker node to the swarm cluster
+  become: yes
+  hosts: worker
+  tasks:
+  - name: Start the worker
+    community.docker.docker_swarm:
+      state: join
+      join_token: "{{ hostvars[groups['master'][0]].master_output.swarm_facts.JoinTokens.Worker }}"
+      remote_addrs: "{{ hostvars[groups['master'][0]].inventory_hostname }}"
+      advertise_addr: "{{ ansible_host }}"

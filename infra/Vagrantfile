@@ -5,6 +5,7 @@ settings = YAML.load_file "clients/#{client}.yaml"
 
 machines=[
   {
+    :name => "leader",
     :hostname => "leader",
     :box => "ubuntu/jammy64",
     :ip => settings['leader']['ip'],
@@ -15,6 +16,7 @@ machines=[
     }
   },
   {
+    :name => "worker",
     :hostname => "worker",
     :box => "ubuntu/jammy64",
     :ip => settings['worker']['ip'],
@@ -26,22 +28,39 @@ machines=[
   }
 ]
 
+# machines=[
+#   {
+#     :hostname => "leader",
+#     :box => "ubuntu/jammy64",
+#     :ip => settings['leader']['ip'],
+#     :ram => settings['leader']['vm']['ram'],
+#     :cpu => 1,
+#     :ansible_extra_vars => {
+#       user: settings['leader']['user']
+#     }
+#   }
+# ]
+
 Vagrant.configure(2) do |config|
     machines.each do |machine|
         config.vm.define machine[:hostname] do |node|
             node.vm.box = machine[:box]
             node.vm.hostname = machine[:hostname]
-            # node.vm.network "private_network", ip: machine[:ip]
+            node.vm.network "private_network", ip: machine[:ip]
             node.vm.synced_folder "data", "/shared"
             node.vm.provider "virtualbox" do |vb|
                 vb.gui = false
                 vb.memory = machine[:ram]
                 vb.cpus = machine[:cpu]
             end
+
+            node.vm.provision :shell, :inline => "sudo sed -i 's/PasswordAuthentication no/PasswordAuthentication yes/g' /etc/ssh/sshd_config; sudo systemctl restart sshd;", run: "always"
+
             node.vm.provision "ansible_local" do |ansible|
               ansible.galaxy_role_file = 'requirements.yml'
               ansible.playbook = "playbook.yml"
               ansible.extra_vars = machine[:ansible_extra_vars]
+              ansible.inventory_path = "./inventory.ini"
             end
         end
     end
